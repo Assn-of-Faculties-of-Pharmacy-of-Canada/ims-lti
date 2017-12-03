@@ -29,23 +29,36 @@
   "bugs": {
     "url": "http://github.com/omsmith/ims-lti/issues"
   },
-  "main": "./lib/ims-lti",
+  "main": "./src/ims-lti",
   "scripts": {
-    "prepublish": "make build"
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "lint": "eslint .",
+    "test": "nyc mocha --exit"
   },
   "dependencies": {
-    "xml2js": "~0.4.0",
-    "xmlbuilder": "~2.4.0",
-    "node-uuid": "~1.4.0"
+    "uuid": "^3.3.2",
+    "xml2js": "^0.4.19",
+    "xmlbuilder": "^10.0.0"
   },
   "devDependencies": {
-    "coffee-coverage": "^0.4.4",
-    "coffee-script": "^1.8.0",
-    "coveralls": "^2.11.2",
-    "mocha": "^2.1.0",
-    "mocha-lcov-reporter": "0.0.1",
-    "mocha-multi": "^0.6.0",
-    "redis": "^0.12.1",
-    "should": "^4.6.1"
+    "coveralls": "^3.0.2",
+    "eslint": "^5.6.0",
+    "mocha": "^5.2.0",
+    "nyc": "^13.1.0",
+    "prettier": "^1.14.3",
+    "redis": "^2.8.0",
+    "should": "^13.2.3"
+  },
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "env": {
+      "es6": true,
+      "mocha": true,
+      "node": true
+    }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5"
   }
 }
