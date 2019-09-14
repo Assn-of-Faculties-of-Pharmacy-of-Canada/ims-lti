@@ -77,6 +77,14 @@ class HMAC_SHA1 {
       originalUrl = url.parse(originalUrl).pathname;
     }
 
+    // When an incoming https request is proxied: the protocol (scheme) is changed to http
+    // In this case allow the proxy to send in the true scheme via the standard x-forwarded-proto header
+    // In a nginx configuration the line to add is:
+    //       proxy_set_header X-Forwarded-Proto $scheme;
+    if (req.headers['x-forwarded-proto'] ==='https') {
+      protocol = 'https'
+    }
+
     if (protocol === undefined) {
       const { encrypted } = req.connection;
       protocol = (encrypted && 'https') || 'http';

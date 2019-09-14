@@ -200,6 +200,47 @@ describe('LTI.Provider', function() {
       });
     });
 
+    it('should return true if proxied from https to http', done => {
+      const req = {
+        url: '/test',
+        protocol: 'https',
+        method: 'POST',
+        connection: {
+          encrypted: undefined,
+        },
+        headers: {
+          host: 'some-org.com',
+          'x-forwarded-proto': 'https'
+        },
+        body: {
+          lti_message_type: 'basic-lti-launch-request',
+          lti_version: 'LTI-1p0',
+          resource_link_id: 'http://link-to-resource.com/resource',
+          oauth_customer_key: 'key',
+          oauth_signature_method: 'HMAC-SHA1',
+          oauth_timestamp: Math.round(Date.now() / 1000),
+          oauth_nonce: Date.now() + Math.random() * 100,
+        },
+      };
+
+      //sign the fake request
+      const signature = this.provider.signer.build_signature(
+        req,
+        req.body,
+        'secret'
+      );
+      req.body.oauth_signature = signature;
+
+      // Mimic what happens when an incoming https request is proxied: the protocol is changed to http
+      req.protocol = 'http'
+
+      this.provider.valid_request(req, function(err, valid) {
+        should.not.exist(err);
+        valid.should.equal(true);
+        done();
+      });
+    });
+
     it('should return true if lti_message_type is ContentItemSelectionRequest', done => {
       const req = {
         url: '/test',
