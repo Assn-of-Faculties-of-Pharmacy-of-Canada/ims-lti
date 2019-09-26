@@ -467,6 +467,53 @@ describe('LTI.Provider', function() {
     });
   });
 
+  describe('additions', () => {
+    it('should use withDetails callbakc', done => {
+      let functionIsCalled = false
+      function callback (details) {
+        details.should.have.property('class');
+        // eslint-disable-next-line no-console
+        console.log('DETAILS', details);
+        functionIsCalled = true;
+      }
+      this.provider = new this.lti.Provider('key', 'secret', null, null, callback);
+      this.signer = this.provider.signer;
+      const req = {
+        url: '/test',
+        method: 'POST',
+        connection: {
+          encrypted: undefined,
+        },
+        headers: {
+          host: 'localhost',
+        },
+        body: {
+          lti_message_type: 'basic-lti-launch-request',
+          lti_version: 'LTI-1p0',
+          resource_link_id: 'http://link-to-resource.com/resource',
+          oauth_customer_key: 'key',
+          oauth_signature_method: 'HMAC-SHA1',
+          oauth_timestamp: Math.round(Date.now() / 1000),
+          oauth_nonce: Date.now() + Math.random() * 100,
+        },
+      };
+
+      //sign the fake request
+      const signature = this.provider.signer.build_signature(req, 'secret');
+      req.body.oauth_signature = signature;
+
+      // Break the signature
+      req.body.oauth_signature += 'garbage';
+
+      this.provider.valid_request(req, function(err, valid) {
+        err.should.not.equal(null);
+        err.should.be.instanceof(lti.Errors.SignatureError);
+        valid.should.equal(false);
+        functionIsCalled.should.be.equal(true);
+        done();
+      });
+    });
+  });
   describe('mapping', () => {
     before(() => {
       this.provider = new this.lti.Provider('key', 'secret');

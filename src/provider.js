@@ -4,11 +4,21 @@ const errors = require('./errors');
 const extensions = require('./extensions');
 
 class Provider {
-  constructor(consumer_key, consumer_secret, nonceStore, signature_method) {
+  /**
+   *
+   * @param consumer_key required
+   * @param consumer_secret required
+   * @param nonceStore optional defaults to MemoryNonceStore
+   * @param signature_method optional defaults to HMAC_SHA1
+   * @param withDetailsCallback function
+   *      withDetailsCallback is provided to help developers dive into problems around validation processes, as
+   *      can happen when using lti behind a proxy that uses http while the outside world uses https
+   */
+  constructor(consumer_key, consumer_secret, nonceStore, signature_method, withDetailsCallback) {
     this.valid_request = this.valid_request.bind(this);
     this.parse_request = this.parse_request.bind(this);
     if (signature_method == null) {
-      signature_method = new HMAC_SHA1();
+      signature_method = new HMAC_SHA1(withDetailsCallback);
     }
     if (typeof consumer_key === 'undefined' || consumer_key === null) {
       throw new errors.ConsumerError('Must specify consumer_key');
@@ -37,6 +47,7 @@ class Provider {
     this.signer = signature_method;
     this.nonceStore = nonceStore;
     this.body = {};
+    this.withDetailsCallback = typeof withDetailsCallback === "function" ? withDetailsCallback : undefined;
   }
 
   // Verify parameter and OAuth signature by passing the request object

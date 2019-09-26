@@ -42,6 +42,9 @@ const _clean_request_body = function(body, query) {
 };
 
 class HMAC_SHA1 {
+  constructor (withDetailsCallback) {
+    this.withDetailsCallback = typeof withDetailsCallback === "function" ? withDetailsCallback : undefined;
+  }
   toString() {
     return 'HMAC_SHA1';
   }
@@ -92,8 +95,7 @@ class HMAC_SHA1 {
 
     const parsedUrl = url.parse(originalUrl, true);
     const hitUrl = protocol + '://' + req.headers.host + parsedUrl.pathname;
-
-    return this.build_signature_raw(
+    const signature =  this.build_signature_raw(
       hitUrl,
       parsedUrl,
       req.method,
@@ -101,12 +103,40 @@ class HMAC_SHA1 {
       consumer_secret,
       token
     );
+
+    if (this.withDetailsCallback) {
+      let details = {};
+      details.class='HMAC_SHA1';
+      details.method='build_signature';
+      details.hapiRawReq = hapiRawReq;
+      details.originalUrl = req.originalUrl;
+      details.url = req.url;
+      details.familyCode = body.tool_consumer_info_product_family_code;
+      details.headersXForwardedProto = req.headers['x-forwarded-proto'];
+      details.encrypted = req.connection.encrypted;
+      details.protocol = protocol;
+      details.hitUrl = hitUrl;
+      details.method = req.method;
+      details.token = token;
+      details.consumer_secret = consumer_secret;
+      details.signature = signature;
+      this.withDetailsCallback(details)
+    }
+    return signature
   }
 
   sign_string(str, key, token) {
     key = `${key}&`;
     if (token) {
       key += token;
+    }
+    if (this.withDetailsCallback) {
+      let details = {};
+      details.class='HMAC_SHA1';
+      details.method='sign_string';
+      details.key = key;
+      details.str = str;
+      this.withDetailsCallback(details)
     }
 
     return crypto
