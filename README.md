@@ -163,3 +163,27 @@ To run the test suite first installing the dependencies:
 npm install
 npm test
 ```
+
+
+## Additions from original
+
+### Problem solving authentication issues
+
+During development it can help to see inside this plugin and look at the parameters being used
+to create the signature.  The provider class now has an optional ```withDetailsCallback``` argument.
+If this is a function then it will be used at key places. The function is to take one argument ```details``` 
+which is an object containing information. It will tell you which class and method is invoking the call.
+
+This can be used in the section of your code that handles a failed validation.
+
+It was very useful to solve two problems.  1. HTTPS proxy support and 2 HTTP to HTTPS
+
+### HTTPS proxy support
+When the LTI plugin is used by an API that is proxied behind a HTTPs server the request protocol is converted
+from the caller's HTTPS to HTTP. The solution is to set the request x-forwarded-proto header in the proxy setup.
+This plugin now looks for ```req.headers['x-forwarded-proto'] ==='https'``` and corrects the protocol for signing.
+
+### HTTP to HTTPS
+If the LMS is running on an HTTP server (e.g. your development laptop) and it is calling into a HTTPS API server the
+validation may fail.  
+This issue is unresolved.
