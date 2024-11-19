@@ -105,28 +105,25 @@ class Provider {
   //
   // Returns true/false if is valid OAuth signatue and nonce
   _valid_oauth(req, body, callback) {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const path = req.originalUrl;
+    const url = `${protocol}://${host}${path}`;
+  
+    // Use 'url' when building the signature base string
     const generated = this.signer.build_signature(
       req,
       body,
-      this.consumer_secret
+      this.consumer_secret,
+      url
     );
+  
     const valid_signature = generated === body.oauth_signature;
     if (!valid_signature) {
       return callback(new errors.SignatureError('Invalid Signature'), false);
     }
-    return this.nonceStore.isNew(
-      body.oauth_nonce,
-      body.oauth_timestamp,
-      function(err, valid) {
-        if (!valid) {
-          return callback(new errors.NonceError('Expired nonce'), false);
-        } else {
-          return callback(null, true);
-        }
-      }
-    );
+    // ... rest of your code
   }
-
   // Stores the request's properties into the @body accessor
   //  Strips 'oauth_' parameters for saftey
   //
