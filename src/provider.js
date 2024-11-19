@@ -122,7 +122,17 @@ class Provider {
     if (!valid_signature) {
       return callback(new errors.SignatureError('Invalid Signature'), false);
     }
-    // ... rest of your code
+    return this.nonceStore.isNew(
+      body.oauth_nonce,
+      body.oauth_timestamp,
+      function(err, valid) {
+        if (!valid) {
+          return callback(new errors.NonceError('Expired nonce'), false);
+        } else {
+          return callback(null, true);
+        }
+      }
+    );
   }
   // Stores the request's properties into the @body accessor
   //  Strips 'oauth_' parameters for saftey
