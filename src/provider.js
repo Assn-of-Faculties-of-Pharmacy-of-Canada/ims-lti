@@ -114,8 +114,7 @@ class Provider {
     const generated = this.signer.build_signature(
       req,
       body,
-      this.consumer_secret,
-      url
+      this.consumer_secret
     );
   
     const valid_signature = generated === body.oauth_signature;
