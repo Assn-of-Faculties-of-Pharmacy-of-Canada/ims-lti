@@ -1,39 +1,59 @@
+require('should');
 const HMAC_SHA1 = require('../src/hmac-sha1');
+const HMAC_SHA256 = require('../src/hmac-sha256');
 
-const signer = new HMAC_SHA1();
+// Shared fixture (IMS LTI 1.1 reference launch). The OAuth 1.0a base
+// string is identical for both HMAC variants except for the signed
+// oauth_signature_method parameter; only the digest algorithm differs.
+const makeReq = () => ({
+  url: '/developers/LTI/test/v1p1/tool.php?foo=123&foo=bar',
+  method: 'POST',
+  connection: {
+    encrypted: undefined,
+  },
+  headers: {
+    host: 'www.imsglobal.org',
+  },
+});
 
-describe('Signer', () =>
+const makeBody = (signatureMethod, signature) => ({
+  resource_link_id: 'rsc1',
+  oauth_callback: 'about:blank',
+  lis_outcome_service_url:
+    'http://www.imsglobal.org/developers/LTI/test/v1p1/common/tool_consumer_outcome.php?b64=MTIzNDU6OjpzZWNyZXQ=',
+  lis_result_sourcedid: 'feb-123-456-2929::28883',
+  launch_presentation_return_url:
+    'http://www.imsglobal.org/developers/LTI/test/v1p1/lms_return.php',
+  lti_version: 'LTI-1p0',
+  lti_message_type: 'basic-lti-launch-request',
+  oauth_version: '1.0',
+  oauth_nonce: '7ee33f6dc94117e792ff529898ce3953',
+  oauth_timestamp: '1397708483',
+  oauth_consumer_key: '12345',
+  oauth_signature_method: signatureMethod,
+  oauth_signature: signature,
+});
+
+describe('Signer', function() {
   it('should include query params', function(done) {
-    const req = {
-      url: '/developers/LTI/test/v1p1/tool.php?foo=123&foo=bar',
-      method: 'POST',
-      connection: {
-        encrypted: undefined,
-      },
-      headers: {
-        host: 'www.imsglobal.org',
-      },
-    };
-    const body = {
-      resource_link_id: 'rsc1',
-      oauth_callback: 'about:blank',
-      lis_outcome_service_url:
-        'http://www.imsglobal.org/developers/LTI/test/v1p1/common/tool_consumer_outcome.php?b64=MTIzNDU6OjpzZWNyZXQ=',
-      lis_result_sourcedid: 'feb-123-456-2929::28883',
-      launch_presentation_return_url:
-        'http://www.imsglobal.org/developers/LTI/test/v1p1/lms_return.php',
-      lti_version: 'LTI-1p0',
-      lti_message_type: 'basic-lti-launch-request',
-      oauth_version: '1.0',
-      oauth_nonce: '7ee33f6dc94117e792ff529898ce3953',
-      oauth_timestamp: '1397708483',
-      oauth_consumer_key: '12345',
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_signature: 'dHORwwJqwh5hQQAlvaA9csSIOhc=',
-    };
-
-    const signature = signer.build_signature(req, body, 'secret');
+    const body = makeBody('HMAC-SHA1', 'dHORwwJqwh5hQQAlvaA9csSIOhc=');
+    const signature = new HMAC_SHA1().build_signature(makeReq(), body, 'secret');
     signature.should.equal(body.oauth_signature);
-
     done();
-  }));
+  });
+
+  it('should sign with HMAC-SHA256', function(done) {
+    const body = makeBody('HMAC-SHA256', '+ZeplVqorMVPEHez1YBhOOgx1m0b7H7cVdE6v0yc2Jk=');
+    const signature = new HMAC_SHA256().build_signature(makeReq(), body, 'secret');
+    signature.should.equal(body.oauth_signature);
+    done();
+  });
+
+  it('SHA-256 and SHA-1 signatures must differ for the same payload', function(done) {
+    const body = makeBody('HMAC-SHA1', null);
+    const s1 = new HMAC_SHA1().build_signature(makeReq(), body, 'secret');
+    const s256 = new HMAC_SHA256().build_signature(makeReq(), body, 'secret');
+    s256.should.not.equal(s1);
+    done();
+  });
+});

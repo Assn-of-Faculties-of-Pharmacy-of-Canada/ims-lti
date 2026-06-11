@@ -44,6 +44,10 @@ const _clean_request_body = function(body, query) {
 class HMAC_SHA1 {
   constructor (withDetailsCallback) {
     this.withDetailsCallback = typeof withDetailsCallback === "function" ? withDetailsCallback : undefined;
+    // Subclasses (HMAC_SHA256) overwrite this after super() returns;
+    // everything except the digest algorithm is shared — the OAuth 1.0a
+    // base-string construction is identical across HMAC variants.
+    this.algorithm = 'sha1';
   }
   toString() {
     return 'HMAC_SHA1';
@@ -106,7 +110,7 @@ class HMAC_SHA1 {
 
     if (this.withDetailsCallback) {
       let details = {};
-      details.class='HMAC_SHA1';
+      details.class=this.toString();
       details.method='build_signature';
       details.hapiRawReq = hapiRawReq;
       details.originalUrl = req.originalUrl;
@@ -132,7 +136,7 @@ class HMAC_SHA1 {
     }
     if (this.withDetailsCallback) {
       let details = {};
-      details.class='HMAC_SHA1';
+      details.class=this.toString();
       details.method='sign_string';
       details.key = key;
       details.str = str;
@@ -140,7 +144,7 @@ class HMAC_SHA1 {
     }
 
     return crypto
-      .createHmac('sha1', key)
+      .createHmac(this.algorithm, key)
       .update(str)
       .digest('base64');
   }
